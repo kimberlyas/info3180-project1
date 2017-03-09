@@ -1,0 +1,55 @@
+{% extends "base.html" %} 
+
+{% block main %} 
+
+<h1 class="page-header">Add a User</h1>
+<p> Fill in this form to create a user profile.</p>
+<br>
+
+{% include 'flash_messages.html' %}
+
+<form method="POST" action="{{ url_for('add_profile') }}" enctype="multipart/form-data">
+    
+    {{ form.csrf_token }}
+    
+    <div class="form-group">
+        <label for="First Name">{{ form.firstname.label }}<b style="color:red"> (Required)</b></label>
+        <p class="help-block">Please enter your first name.</p>
+        {{ form.firstname(size=35) }}
+    </div>
+    <div class="form-group">
+        <label for="Last Name">{{ form.lastname.label }}<b style="color:red"> (Required)</b></label>
+        <p class="help-block">Please enter your last name.</p>
+        {{ form.lastname(size=35) }}
+    </div>
+     <div class="form-group">
+        <label for="Username">{{ form.username.label }}<b style="color:red"> (Required)</b></label>
+        <p class="help-block">Please choose a username.</p>
+        {{ form.username }}
+    </div>
+    <div class="form-group">
+        <label for="Age">{{ form.age.label }}<b style="color:red"> (Required)</b></label>
+        <p class="help-block">Please enter your age.</p>
+        {{ form.age }}
+    </div>
+    <div class="form-group">
+        <label for="Gender">{{ form.gender.label }}<b style="color:red"> (Required)</b></label>
+        <p class="help-block">Please select your gender.</p>
+        {{ form.gender }}
+    </div>
+    <div class="form-group">
+        <label for="Biography">{{ form.biography.label }}<b style="color:red"> (Required)</b></label>
+        <p class="help-block">Please enter a short paragraph about yourself.</p>
+        {{ form.biography(cols="55", rows="5") }}
+    </div>
+    <div class="form-group">
+        <label for="Profile Picture">{{ form.image.label }}<b style="color:blue"> (Optional)</b></label>
+        <p class="help-block">Please upload a picture of yourself.</p>
+        {{ form.image }}
+    </div>
+    
+    <button class="btn btn-primary active" type="submit">Add User</button>
+    
+</form>
+
+{% endblock %}

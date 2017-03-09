@@ -5,12 +5,15 @@ Werkzeug Documentation:  http://werkzeug.pocoo.org/documentation/
 This file creates your application.
 """
 
-from app import app, db, login_manager
-from flask import render_template, request, redirect, url_for, flash
+from app import app, db
+from flask import render_template, request, redirect, url_for, flash, json, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
-from forms import LoginForm
-from models import UserProfile
-
+from forms import ProfileForm
+from app.models import UserProfile
+from werkzeug.utils import secure_filename
+import time
+import os
+import random
 
 ###
 # Routing for your application.
@@ -26,62 +29,130 @@ def about():
     """Render the website's about page."""
     return render_template('about.html')
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    form = LoginForm()
+@app.route('/profile/', methods=['GET', 'POST'])
+def add_profile():
+    """ Render a page for adding a user profile """
+    # Generate form
+    form = ProfileForm()
+    # Check request type
     if request.method == "POST":
-        # change this to actually validate the entire form submission
-        # and not just one field
+        # Validate form
         if form.validate_on_submit():
-            # Get the username and password values from the form.
-            username = form.username.data
-            password = form.password.data
+            # Get form values
+            first_name = request.form['firstname']
+            last_name = request.form['lastname']
+            username = request.form['username']
+            age = request.form['age']
+            biography = request.form['biography']
+            gender = request.form['gender']
+            # Uploads folder
+            imageFolder = app.config["UPLOAD_FOLDER"]
+            # Get picture file
+            imageFile = request.files['image']
+            # Check if empty
+            if imageFile == None:
+                # Store default profile pic
+                imageFile = "profile-default.jpg"
+            imageName = secure_filename(imageFile.filename)
+            imageFile.save(os.path.join(imageFolder, imageName))
+            # Loop to find a unique id
+            while True:
+                # Generate a random userid
+                userid = random.randint(620000000, 620099999)
+                # Search for this userid
+                result = UserProfile.query.filter_by(userid=userid).first() 
+                # Check if not found
+                if result is None:
+                    # Unique; Exit loop
+                    break
+            # Generate the date the user was created on
+            created_on = timeinfo()
+            # Store data in database
+            profile = UserProfile(userid,first_name, last_name,username,age,gender,biography,imageName,created_on)
+            db.session.add(profile)
+            db.session.commit()
+            # Flash success message
+            flash('New user profile sucessfully added', 'success')
+            # Redirect to user's profile/ list of profiles
+            #return redirect(url_for('/profile/<userid>'))
+            return redirect(url_for('list_profiles'))
+        
+    # Display any errors in form
+    flash_errors(form)
             
-            # using your model, query database for a user based on the username
-            # and password submitted
-            # store the result of that query to a `user` variable so it can be
-            # passed to the login_user() method.
-            user = UserProfile.query.filter_by(username=username, password=password).first()
-           
-            if user is not None:
-               
-                # get user id, load into session
-                login_user(user)
+    return render_template('add_profile.html', form=form)
 
-                # remember to flash a message to the user
-                flash("You made it in!", 'success')
-            
-                return redirect(url_for("secure_page")) # they should be redirected to a secure-page route instead
-            else:
-                flash('Username or Password incorrect.', 'danger')
-                
-    return render_template("login.html", form=form)
-
-# user_loader callback. This callback is used to reload the user object from
-# the user ID stored in the session
-@login_manager.user_loader
-def load_user(id):
-    return UserProfile.query.get(int(id))
+@app.route('/profiles', methods=['GET','POST'])
+def list_profiles():
+    """ Render a page for viewing a list of all user profiles """
     
-@app.route('/secure-page/')
-@login_required
-def secure_page():
-    """Render a secure page on our website that only logged in users can access."""
-    return render_template('secure_page.html')
-
-@app.route("/logout")
-@login_required
-def logout():
-    # logout user and end session
-    logout_user()
-    # flash message to user
-    flash('Logged out.', 'danger')
-    # redirect to the home route
-    return redirect(url_for('home'))
+    # Get all user profiles from database
+    profiles = db.session.query(UserProfile).all()
+    
+    if request.method == 'POST' and request.headers['Content-Type'] == 'application/json':
+        # Initialize a profile list
+        profileList = []
+        # Get each profile
+        for profile in profiles:
+            # Create dictionary format
+            profileDict = {'username': profile.username, 'userid': profile.userid}
+            # Add to list of profiles
+            profileList.append(profileDict)
+        # Convert list to JSON data
+        jsonProfiles = json.dumps(profileList)
+        # Generate JSON output
+        return jsonify(users=jsonProfiles)
+    else:
+        if profiles == None:
+            # Display message
+            flash('Nothing to display. No users have been added.', 'danger')
+        # Render page for viewing all user profiles
+        return render_template('profiles_listing.html', profiles=profiles)
+    
+@app.route('/profile/<userid>', methods=['GET','POST'])
+def view_profile(userid):
+    """ Render an individual user profile page """
+    # Search for given userid
+    user_profile = UserProfile.query.filter_by(userid=userid).first()
+    # Check if found
+    if user_profile is not None:
+        # Check request type
+        if request.method == 'POST' and request.headers['Content-Type'] == 'application/json':
+            # Generate JSON output
+            return jsonify(userid=user_profile.userid, username=user_profile.username, image=user_profile.image, gender=user_profile.gender, age=user_profile.age, profile_created_on=user_profile.created_on )
+        else:
+            # Render user's profile page
+            return render_template('view_profile.html', user_profile=user_profile)
+    else: # Not found
+        # Check request type
+        if request.method == 'GET':
+            
+            # Flash error message
+            flash('Sorry! User does not exist.','danger')
+            
+            # Render user's profile page
+            return render_template('view_profile.html', user_profile=user_profile)
+           
+        elif  request.method == 'POST' and request.headers['Content-Type'] == 'application/json':
+            # Return empty set
+            return jsonify(user_profile)
+    
 
 ###
 # The functions below should be applicable to all Flask apps.
 ###
+
+def timeinfo():
+    """ Returns the current datetime """
+    return time.strftime("%a, %d %b %Y")
+
+def flash_errors(form):
+    """Flashes form errors"""
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(u"Error in the %s field - %s" % (
+                getattr(form, field).label.text,
+                error ), 'danger')
 
 @app.route('/<file_name>.txt')
 def send_text_file(file_name):
