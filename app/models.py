@@ -7,9 +7,9 @@ class UserProfile(db.Model):
     username = db.Column(db.String(80), unique=True)
     age = db.Column(db.Integer)
     gender = db.Column(db.String(1))
-    biography = db.Column(db.String(255))
+    biography = db.Column(db.Text)
     image = db.Column(db.String(255))
-    created_on = db.Column(db.DateTime)
+    created_on = db.Column(db.String(80))
     
     def __init__(self, userid, firstname, lastname, username, age, sex, bio, imageFile, createdOn):
         self.userid = userid
@@ -18,7 +18,7 @@ class UserProfile(db.Model):
         self.username = username
         self.age = age
         self.gender = sex
-        self.biograpgy = bio
+        self.biography = bio
         self.image = imageFile
         self.created_on = createdOn
     

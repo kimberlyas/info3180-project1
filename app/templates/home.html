@@ -2,8 +2,16 @@
 
 {% block main %}
 <h1 class="page-header">INFO3180 Project 1</h1>
-<p class="lead">A Flask based application that can accept and display user profile information.<br/>
-The user profile information is stored in a PostgreSQL database. 
-The application also has an API feature that returns JSON data for POST requests made.</p>
+<p class="lead"> A Flask based application that can accept and display user profile information. </p>
+<ul>
+  <li>The user profile information is stored in a PostgreSQL database.</li>
+  <li>The application also has an API feature that returns JSON data for POST requests made.</li>
+  <li>To test the API feature, the following commands can be used to:
+      <ol>
+          <li>Retrieve a list of all users <br/> <code>curl -H "Content-Type: application/json" -X POST http://0.0.0.0:8080/profiles</code></li>
+          <li>Retrieve an individual user profile <br/> <code>curl -H "Content-Type: application/json" -X POST http://0.0.0.0:8080/profile/[userid]</code></li>
+      </ol>
+  </li>
+</ul>  
 <br/>
 {% endblock %}

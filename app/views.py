@@ -21,17 +21,13 @@ import random
 
 @app.route('/')
 def home():
-    """Render website's home page."""
+    """ Render website's home page."""
     return render_template('home.html')
-
-@app.route('/about/')
-def about():
-    """Render the website's about page."""
-    return render_template('about.html')
 
 @app.route('/profile/', methods=['GET', 'POST'])
 def add_profile():
     """ Render a page for adding a user profile """
+    
     # Generate form
     form = ProfileForm()
     # Check request type
@@ -50,11 +46,14 @@ def add_profile():
             # Get picture file
             imageFile = request.files['image']
             # Check if empty
-            if imageFile == None:
-                # Store default profile pic
-                imageFile = "profile-default.jpg"
-            imageName = secure_filename(imageFile.filename)
-            imageFile.save(os.path.join(imageFolder, imageName))
+            if imageFile.filename == '':
+                # Store default profile pic in DB
+                imageName = "profile-default.gif"
+            else:
+                # Secure file
+                imageName = secure_filename(imageFile.filename)
+                # Save to uploads directory
+                imageFile.save(os.path.join(imageFolder, imageName))
             # Loop to find a unique id
             while True:
                 # Generate a random userid
@@ -68,13 +67,12 @@ def add_profile():
             # Generate the date the user was created on
             created_on = timeinfo()
             # Store data in database
-            profile = UserProfile(userid,first_name, last_name,username,age,gender,biography,imageName,created_on)
+            profile = UserProfile(userid,first_name,last_name,username,age,gender,biography,imageName,created_on)
             db.session.add(profile)
             db.session.commit()
             # Flash success message
             flash('New user profile sucessfully added', 'success')
-            # Redirect to user's profile/ list of profiles
-            #return redirect(url_for('/profile/<userid>'))
+            # Redirect to list of profiles
             return redirect(url_for('list_profiles'))
         
     # Display any errors in form
@@ -99,19 +97,22 @@ def list_profiles():
             # Add to list of profiles
             profileList.append(profileDict)
         # Convert list to JSON data
-        jsonProfiles = json.dumps(profileList)
+        #jsonProfiles = json.dumps(profileList)
         # Generate JSON output
-        return jsonify(users=jsonProfiles)
+        return jsonify(users=profileList)
     else:
-        if profiles == None:
+        if not profiles:
             # Display message
-            flash('Nothing to display. No users have been added.', 'danger')
+            flash('No users have been added. Add a user below.', 'danger')
+            # Redirect to add user page
+            return redirect(url_for('add_profile'))
         # Render page for viewing all user profiles
         return render_template('profiles_listing.html', profiles=profiles)
     
 @app.route('/profile/<userid>', methods=['GET','POST'])
 def view_profile(userid):
     """ Render an individual user profile page """
+    
     # Search for given userid
     user_profile = UserProfile.query.filter_by(userid=userid).first()
     # Check if found
@@ -130,11 +131,11 @@ def view_profile(userid):
             # Flash error message
             flash('Sorry! User does not exist.','danger')
             
-            # Render user's profile page
-            return render_template('view_profile.html', user_profile=user_profile)
+            # Redirect to list of users
+            return redirect(url_for('list_profiles'))
            
         elif  request.method == 'POST' and request.headers['Content-Type'] == 'application/json':
-            # Return empty set
+            # Return empty set (null)
             return jsonify(user_profile)
     
 
@@ -144,7 +145,7 @@ def view_profile(userid):
 
 def timeinfo():
     """ Returns the current datetime """
-    return time.strftime("%a, %d %b %Y")
+    return time.strftime("%d %b %Y")
 
 def flash_errors(form):
     """Flashes form errors"""

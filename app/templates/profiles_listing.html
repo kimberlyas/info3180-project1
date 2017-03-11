@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block main %}
-<h1 class="page-header">Profiles Listing</h1>
+<h1 class="page-header">Users</h1>
 
 {% include 'flash_messages.html' %}
 
@@ -10,7 +10,7 @@
         <li class="list-group-item justify-content-between">
             <span><img src={{ url_for('static',filename="uploads/"+ profile.image) }} alt={{ profile.image }} class="img-thumbnail" height="100" width="75"></span>
             <a href="/profile/{{ profile.userid }}"> {{ profile.username }} </a>
-            <span class="badge badge-default badge-pill">{{ profile.userid }}</span>
+            <span class="badge badge-default badge-pill"> {{ profile.userid }} </span>
         </li>
     {% endfor %}
 </ul>

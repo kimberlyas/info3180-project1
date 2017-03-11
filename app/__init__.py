@@ -9,6 +9,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True # added just to suppress a w
 # Location where image uploads will be stored
 UPLOAD_FOLDER = './app/static/uploads'
 
+# Allowed image upload extensions
+#IMAGES = set(['png', 'jpg', 'jpeg', 'gif'])
+
+
 db = SQLAlchemy(app)
 
 app.config.from_object(__name__)
